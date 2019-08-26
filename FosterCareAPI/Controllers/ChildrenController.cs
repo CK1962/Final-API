@@ -21,12 +21,14 @@ namespace FosterCareAPI.Controllers
         }
         // GET api/values
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult Get()
         {
             try
             {
-                var children = _childrenService.GetAll();
-                var childrenModels = children.Select(b => b.ToApiModel());
+                var childrenModels = _childrenService
+                    .GetAll()
+                    .ToApiModels();
+
                 return Ok(childrenModels);
 
             }
@@ -43,11 +45,11 @@ namespace FosterCareAPI.Controllers
         {
             try
             {
-                var children = _childrenService.Get(childrenId);
-                var childrenModels = children.ToApiModel();
+                var child = _childrenService.Get(id);
+                var childrenModels = child.ToApiModel();
                 return Ok(childrenModels);
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 ModelState.AddModelError("GetChildren", ex.Message);
                 return BadRequest(ModelState);
@@ -56,25 +58,29 @@ namespace FosterCareAPI.Controllers
 
         // POST api/values
         [HttpPost]
-        public IActionResult Post([FromBody] Children children)
+        public IActionResult Post([FromBody] ChildrenModel newchildren)
         {
             try
             {
-                return Ok(_childrenService.Add(children).ToApiModel());
+                _childrenService.Add(newchildren.ToDomainModel());
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 ModelState.AddModelError("AddChildren", ex.Message);
                 return BadRequest(ModelState);
             }
+
+            return CreatedAtAction("Get", new { Id = newChildren.Id }, newchildren);
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] Children children)
+        public IActionResult Put(int id, [FromBody] Children child)
         {
             try
             {
+                var children = _childrenService.Update(updatedChildren.ToDomainModel());
+                if (children == null) return NotFound();
                 return Ok(_childrenService.Update(children).ToApiModel());
             }
             catch (Exception ex)
@@ -88,16 +94,10 @@ namespace FosterCareAPI.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            try
-            {
-                _childrenService.Remove(id);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("DeleteChildren", ex.Message);
-                return BadRequest(ModelState);
-            }
+                var children = _childrenService.Get(id);
+                if (children == null) return NotFound();
+                _childrenService.Remove(children);
+                return NoContent();
         }
     }
 }
